@@ -15,7 +15,7 @@
 
   let course: Course;
   let searchLos: Lo[] = [];
-
+  let project_id: string = '68f58c24-1633-429d-bb39-cb0947f86d02'
   
   let searchInputElement = $state();
   let isLoading = $state(false);
@@ -74,13 +74,12 @@
     let searchResults: string = await googleSearch();
     
     try {
-      const response = await fetch('http://localhost:11434/api/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const response = await fetch('/api/summarise-search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: "granite3.1-dense:2b",
+          model_id: 'ibm/granite-3-8b-instruct',
+          project_id: project_id,
           prompt: `You are an AI-powered search engine that provides users with the most relevant and accurate resources based on 
           student's search query: "${searchTerm}"
 
@@ -92,6 +91,12 @@
                 If the snippets contain numerical data, key facts, or insights, incorporate them into the summary.  
                 3. Do not generate new links or modify the provided links — copy them exactly as they appear.  
                 4. Prioritize official sources, well-known websites, and content that directly addresses the query.  
+                5. Include only one summary
+                6. Include list of links only once
+                7. Do not add Notes
+                8. **Strictly include only one summary and one list of links.**  
+                9. **Do not generate duplicate sections (Summary or List of links).**  
+                10. **Do not include "Summary: {Concise summary...}", "List of links:", or repeated lists.**  
 
                 Output Format (Strictly Follow This Format):  
                 **Summary:** {A short, well-structured response based on the snippet details}  
@@ -115,7 +120,10 @@
   
     const result = await response.json(); 
     console.log("API Response:", result);
-    llmOutput = result.response; 
+    let generatedText = result.results[0].generated_text || "No results found.";
+    let cleanedText = generatedText.split("**Output:**").pop()?.trim() || "No results found.";
+    cleanedText = cleanedText.replace(/^\*\*Note:\*\*.*?\n\n/i, "").trim();
+    llmOutput = cleanedText;
     // llmOutput = convertMdToHtml(llmOutput);
   } catch (error) {
       console.error('Error:', error);
@@ -176,7 +184,7 @@
   {:else if !llmOutput}
     <h1 class="text-center text-2xl font-bold">What can I help with? Type your search term and hit Enter</h1>
   {:else}
-   <div class="px-6 py-4 my-4 prose">
+   <div class="px-6 py-4 my-4">
     <p>{@html marked(llmOutput)}</p>
     </div>
   {/if}
