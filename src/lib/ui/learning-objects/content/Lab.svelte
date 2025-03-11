@@ -7,18 +7,49 @@
   import { fly } from "svelte/transition";
   import { slideFromLeft } from "$lib/ui/navigators/animations";
   import { currentCodeTheme } from "$lib/services/markdown";
+  import { writable } from "svelte/store";
 
   interface Props {
     lab: LiveLab;
   }
-  let { lab }: Props = $props();
 
-  onMount(async () => {
+    interface Message {
+    role: 'user' | 'assistant' | 'system';
+    content: string;
+    responseId?: number;
+    responseDate?: string;
+    contentUrl?: string;
+    llmUsed?: string;
+    helpful?: boolean;
+  }
+
+  let { lab }: Props = $props();
+  let project_id: string = '68f58c24-1633-429d-bb39-cb0947f86d02'
+  let isLoaded = writable(false);
+  let selectedText = writable("");
+  let showEli5Button = writable(false);
+  let buttonPosition = writable({ top: 0, left: 0 });
+  let modalOpen = writable(false);
+  let modalContent = writable(""); // see if I can remove this
+  let llmResponse = writable<Message>({
+    role: 'assistant',
+    content: '',
+    responseId: undefined,
+    responseDate: undefined,
+    contentUrl: undefined,
+    llmUsed: undefined,
+    helpful: undefined
+  });
+  let isLoading = writable(false);
+  onMount(() => {
     window.addEventListener("keydown", keypressInput);
+    document.addEventListener("mouseup", handleTextSelection);
+    isLoaded.set(true);
   });
 
   onDestroy(() => {
     browser ? window.removeEventListener("keydown", keypressInput) : null;
+    document.removeEventListener("mouseup", handleTextSelection);
   });
 
   afterNavigate(() => {
@@ -40,10 +71,108 @@
       goto(`${lab.url}/${step}`);
     }
   }
-  let isLoaded = $state(false);
-  onMount(() => {
-    isLoaded = true;
-  });
+
+  function handleTextSelection() {
+    const selection = window.getSelection();
+    if (selection && selection.toString().trim() !== "") {
+      const range = selection.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      selectedText.set(selection.toString());
+      buttonPosition.set({ top: rect.top + window.scrollY, left: rect.left + window.scrollX });
+      showEli5Button.set(true);
+    } else {
+      showEli5Button.set(false);
+    }
+  }
+
+  async function openModal() {
+    isLoading.set(true);
+    const response = await sendMessage();
+    llmResponse.set(response);
+    modalContent.set(response.content);
+    isLoading.set(false);
+    modalOpen.set(true);
+    showEli5Button.set(false);
+  }
+
+  function closeModal() {
+    modalOpen.set(false);
+  }
+
+  // AI variables
+  // svelte-ignore non_reactive_update
+  let llmOutput: string = "";
+
+  // LLM call
+  async function sendMessage(): Promise<Message> {
+    const userMessage = $selectedText.trim();
+    isLoading.set(true);
+
+    try {
+      const response = await fetch('/api/summarise-search-background', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model_id: 'ibm/granite-3-8b-instruct',
+          project_id: project_id,
+          prompt: `You need to explain like I am five: "${userMessage}"`,
+          stream: false,
+          options: {
+            "temperature": 0.8, //Increasing the temperature will make the model answer more creatively
+            "num_ctx": 8000, //Sets the size of the context window used to generate the next token.
+            "top_k": 1,
+            "top_p": 0.1,
+          },
+        }),
+      });
+
+      const result = await response.json();
+      const llmOutput = result?.results?.[0]?.generated_text || "No results found.";
+
+      // Log the result to the console
+      console.log("API Response:", llmOutput);
+
+      const llmMessage: Message = {
+          role: 'assistant',
+          content:llmOutput,
+          responseId: Date.now(),
+          responseDate: new Date().toISOString(),
+          contentUrl: window.location.href,
+          llmUsed: 'ibm/granite-3-8b-instruct',
+          helpful: false,
+        };
+      
+      console.log("llmMessage:", llmMessage);  
+      return llmMessage;
+
+    } catch (error) {
+      console.error('Error:', error);
+          return {
+        role: 'assistant',
+        content: "An error occurred while fetching data.",
+        responseId: Date.now(),
+        responseDate: new Date().toISOString(),
+        contentUrl: window.location.href,
+        llmUsed: 'ibm/granite-3-8b-instruct',
+        helpful: false,
+      };
+    } finally {
+      isLoading.set(false);
+    }
+  }
+
+  async function copyText(textToCopy: any) {
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+    } catch (err) {
+      console.error('Failed to copy text:', err);
+    }
+    showEli5Button.set(false);
+  }
+
+  async function updateMessageHelpful(helpful: boolean) {
+    llmResponse.update(content => ({ ...content, helpful }));
+  }
 </script>
 
 <svelte:head>
@@ -58,7 +187,7 @@
 <div class="lab-content w-full pb-14">
   <div class="max-w-l flex">
     <div class="mr-2 hidden h-auto w-72 lg:block">
-      {#if isLoaded}
+      {#if $isLoaded}
         <div
           in:fly={slideFromLeft.in}
           out:fly={slideFromLeft.out}
@@ -90,3 +219,32 @@
     </nav>
   </div>
 </div>
+
+{#if $showEli5Button}
+<button 
+  type="button" 
+  class="btn px-4 py-2 bg-gray-500 text-white rounded"
+  on:click={openModal}
+  style="position: absolute; top: {$buttonPosition.top}px; left: {$buttonPosition.left}px;"
+>
+  {#if $isLoading}
+        Loading...
+      {:else}
+        Explain like I am five
+  {/if}
+</button>
+{/if}
+
+{#if $modalOpen}
+  <div class="modal modal-open fixed inset-0 flex items-center justify-start bg-black bg-opacity-50" on:click={closeModal}>
+    <div class="modal-box bg-white p-4 rounded shadow-lg w-2/3" on:click|stopPropagation>
+      <h3 class="font-bold text-lg">Tutors AI Explanation</h3>
+      <p class="py-4">{$modalContent}</p>
+        <div class="flex justify-end space-x-2">
+        <button on:click={() => copyText($modalContent)}><i class="fa-solid fa-copy"></i></button>
+        <button on:click={() => updateMessageHelpful(false)}><i class="fa-solid fa-thumbs-down"></i></button>
+        <button on:click={() => updateMessageHelpful(true)}><i class="fa-solid fa-thumbs-up"></i></button>
+      </div>
+    </div>
+  </div>
+{/if}
