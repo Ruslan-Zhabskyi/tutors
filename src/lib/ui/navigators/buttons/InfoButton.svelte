@@ -10,7 +10,7 @@
   import { marked } from 'marked';
   import { Avatar } from '@skeletonlabs/skeleton-svelte';
   import '@fortawesome/fontawesome-free/css/all.min.css';
-
+  import {supabase} from '$lib/db';
   export let tutorsAI: string = '/icons/tutorsAI.png';
 
     let topic = currentCourse?.value?.contentHtml;
@@ -21,11 +21,13 @@
 
   interface Message {
     role: 'user' | 'assistant' | 'system';
+    userMessage?: string;
     content: string;
     responseId?: number;
     responseDate?: string;
     contentUrl?: string;
     llmUsed?: string;
+    feature?: string;
     helpful?: boolean;
   }
 
@@ -73,18 +75,45 @@ async function sendMessage(): Promise<void> {
             throw new Error(`Error: ${response.status}`);
         }
 
-        const data = await response.json();
-        console.log('API Response:', data);
+        const dataResponse = await response.json();
+        console.log('API Response:', dataResponse);
 
-        const rawText = data.results[0]?.generated_text || 'No content available';
+        const rawText = dataResponse.results[0]?.generated_text || 'No content available';
         console.log('API rawText:', rawText);
         const assistantResponse = rawText.split('\nrole: user')[0]?.trim(); // Clean response
         
+        //supabase insert
+          const { data, error } = await supabase
+            .from('GenAiResponses')
+            .insert(
+              {   role: 'assistant',
+                  userMessage: userMessage,
+                  content:assistantResponse,
+                  contentUrl: window.location.href,
+                  llmUsed: selectedModel,
+                  feature: 'Chat Tutors AI',
+                  helpful: false,
+                },
+            )
+            .select()
+
+            if (error) {
+          console.error("Error inserting data:", error.message); 
+        } else {
+          console.log("Data inserted:", data);
+        }
+
+       console.log("Data inserted:", data);
+       const responseId = data?.[0]?.responseId; 
+       console.log("Extracted responseId:", responseId);
+       const responseDate = data?.[0]?.responseDate; 
+        //end supabase insert
+
         const llmMessage: Message = {
           role: 'assistant',
           content:assistantResponse,
-          responseId: Date.now(),
-          responseDate: new Date().toISOString(),
+          responseId: responseId,
+          responseDate: responseDate,
           contentUrl: window.location.href,
           llmUsed: selectedModel,
           helpful: false,
@@ -110,8 +139,7 @@ async function sendMessage(): Promise<void> {
     }
     setTimeout(() => scrollChatBottom('smooth'), 0);
   }
-
-//Copy text function:
+  
 async function copyText(textToCopy: any) {
     try {
       await navigator.clipboard.writeText(textToCopy);
