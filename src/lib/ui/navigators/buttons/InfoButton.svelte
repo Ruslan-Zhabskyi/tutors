@@ -88,7 +88,7 @@ async function sendMessage(): Promise<void> {
             .insert(
               {   role: 'assistant',
                   userMessage: userMessage,
-                  content:assistantResponse,
+                  content: assistantResponse,
                   contentUrl: window.location.href,
                   llmUsed: selectedModel,
                   feature: 'Chat Tutors AI',
@@ -110,13 +110,13 @@ async function sendMessage(): Promise<void> {
         //end supabase insert
 
         const llmMessage: Message = {
-          role: 'assistant',
-          content:assistantResponse,
-          responseId: responseId,
-          responseDate: responseDate,
-          contentUrl: window.location.href,
-          llmUsed: selectedModel,
-          helpful: false,
+            role: 'assistant',
+            content: assistantResponse,
+            responseId: responseId,
+            responseDate: responseDate,
+            contentUrl: window.location.href,
+            llmUsed: selectedModel,
+            helpful: false,
         };
 
       messages = [...messages, llmMessage];
@@ -147,6 +147,26 @@ async function copyText(textToCopy: any) {
       console.error('Failed to copy text:', err);
     }
   }
+
+
+async function updateMessageHelpful(responseId: number | undefined, helpful: boolean) {
+  if (!responseId) {
+    console.error("No responseId available for update.");
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from('GenAiResponses')
+    .update({ helpful }) 
+    .eq('responseId', responseId)
+    .select();
+
+  if (error) {
+    console.error("Error updating helpful status:", error);
+  } else {
+    console.log("Update successful:", data);
+  }
+}
 </script>
 
 {#snippet menuSelector()}
@@ -197,8 +217,13 @@ async function copyText(textToCopy: any) {
           <Avatar src={tutorsAI} name="TutorsAI" size="size-8" />
           <div class="card p-4">
             <p>{@html marked(message.content)}</p>
-            <button on:click={() => message.helpful = true}><i class="fa-solid fa-thumbs-up"></i></button>
-            <button on:click={() => message.helpful = false}><i class="fa-solid fa-thumbs-down"></i></button>
+          <button on:click={() => updateMessageHelpful(message.responseId, false)} aria-label="Mark as not helpful">
+            <i class="fa-solid fa-thumbs-down"></i>
+          </button>
+
+          <button on:click={() => updateMessageHelpful(message.responseId, true)} aria-label="Mark as helpful">
+            <i class="fa-solid fa-thumbs-up"></i>
+          </button>
             <button on:click={copyText(message.content)}><i class="fa-solid fa-copy"></i></button>
           </div>
         </div>
