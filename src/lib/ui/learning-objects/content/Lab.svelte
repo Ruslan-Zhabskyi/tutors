@@ -8,6 +8,8 @@
   import { slideFromLeft } from "$lib/ui/navigators/animations";
   import { currentCodeTheme } from "$lib/services/markdown";
   import { writable } from "svelte/store";
+  import {supabase} from '$lib/db';
+
 
   interface Props {
     lab: LiveLab;
@@ -136,8 +138,29 @@
           helpful: false,
         };
       
+    // Save the response to the database
+
+    const { data, error } = await supabase
+    .from('GenAiResponses')
+    .insert(
+      {   role: 'assistant',
+          content:llmOutput,
+          contentUrl: window.location.href,
+          llmUsed: model_id,
+          helpful: false,
+        },
+    )
+    .select()
+
+    if (error) {
+  console.error("Error inserting data:", error.message); // More detailed error logging
+} else {
+  console.log("Data inserted:", data);
+}
+        
       console.log("llmMessage:", llmMessage);  
       return llmMessage;
+
 
     } catch (error) {
       console.error('Error:', error);
