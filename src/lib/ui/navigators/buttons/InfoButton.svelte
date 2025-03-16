@@ -10,7 +10,7 @@
   import { marked } from 'marked';
   import { Avatar } from '@skeletonlabs/skeleton-svelte';
   import '@fortawesome/fontawesome-free/css/all.min.css';
-
+  import {supabase} from '$lib/db';
   export let tutorsAI: string = '/icons/tutorsAI.png';
 
     let topic = currentCourse?.value?.contentHtml;
@@ -21,11 +21,13 @@
 
   interface Message {
     role: 'user' | 'assistant' | 'system';
+    userMessage?: string;
     content: string;
     responseId?: number;
     responseDate?: string;
     contentUrl?: string;
     llmUsed?: string;
+    feature?: string;
     helpful?: boolean;
   }
 
@@ -73,21 +75,48 @@ async function sendMessage(): Promise<void> {
             throw new Error(`Error: ${response.status}`);
         }
 
-        const data = await response.json();
-        console.log('API Response:', data);
+        const dataResponse = await response.json();
+        console.log('API Response:', dataResponse);
 
-        const rawText = data.results[0]?.generated_text || 'No content available';
+        const rawText = dataResponse.results[0]?.generated_text || 'No content available';
         console.log('API rawText:', rawText);
         const assistantResponse = rawText.split('\nrole: user')[0]?.trim(); // Clean response
         
+        //supabase insert
+          const { data, error } = await supabase
+            .from('GenAiResponses')
+            .insert(
+              {   role: 'assistant',
+                  userMessage: userMessage,
+                  content: assistantResponse,
+                  contentUrl: window.location.href,
+                  llmUsed: selectedModel,
+                  feature: 'Chat Tutors AI',
+                  helpful: false,
+                },
+            )
+            .select()
+
+            if (error) {
+          console.error("Error inserting data:", error.message); 
+        } else {
+          console.log("Data inserted:", data);
+        }
+
+       console.log("Data inserted:", data);
+       const responseId = data?.[0]?.responseId; 
+       console.log("Extracted responseId:", responseId);
+       const responseDate = data?.[0]?.responseDate; 
+        //end supabase insert
+
         const llmMessage: Message = {
-          role: 'assistant',
-          content:assistantResponse,
-          responseId: Date.now(),
-          responseDate: new Date().toISOString(),
-          contentUrl: window.location.href,
-          llmUsed: selectedModel,
-          helpful: false,
+            role: 'assistant',
+            content: assistantResponse,
+            responseId: responseId,
+            responseDate: responseDate,
+            contentUrl: window.location.href,
+            llmUsed: selectedModel,
+            helpful: false,
         };
 
       messages = [...messages, llmMessage];
@@ -110,8 +139,7 @@ async function sendMessage(): Promise<void> {
     }
     setTimeout(() => scrollChatBottom('smooth'), 0);
   }
-
-//Copy text function:
+  
 async function copyText(textToCopy: any) {
     try {
       await navigator.clipboard.writeText(textToCopy);
@@ -119,6 +147,26 @@ async function copyText(textToCopy: any) {
       console.error('Failed to copy text:', err);
     }
   }
+
+
+async function updateMessageHelpful(responseId: number | undefined, helpful: boolean) {
+  if (!responseId) {
+    console.error("No responseId available for update.");
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from('GenAiResponses')
+    .update({ helpful }) 
+    .eq('responseId', responseId)
+    .select();
+
+  if (error) {
+    console.error("Error updating helpful status:", error);
+  } else {
+    console.log("Update successful:", data);
+  }
+}
 </script>
 
 {#snippet menuSelector()}
@@ -169,8 +217,13 @@ async function copyText(textToCopy: any) {
           <Avatar src={tutorsAI} name="TutorsAI" size="size-8" />
           <div class="card p-4">
             <p>{@html marked(message.content)}</p>
-            <button on:click={() => message.helpful = true}><i class="fa-solid fa-thumbs-up"></i></button>
-            <button on:click={() => message.helpful = false}><i class="fa-solid fa-thumbs-down"></i></button>
+          <button on:click={() => updateMessageHelpful(message.responseId, false)} aria-label="Mark as not helpful">
+            <i class="fa-solid fa-thumbs-down"></i>
+          </button>
+
+          <button on:click={() => updateMessageHelpful(message.responseId, true)} aria-label="Mark as helpful">
+            <i class="fa-solid fa-thumbs-up"></i>
+          </button>
             <button on:click={copyText(message.content)}><i class="fa-solid fa-copy"></i></button>
           </div>
         </div>
