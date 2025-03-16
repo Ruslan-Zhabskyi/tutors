@@ -8,6 +8,8 @@
   import { slideFromLeft } from "$lib/ui/navigators/animations";
   import { currentCodeTheme } from "$lib/services/markdown";
   import { writable } from "svelte/store";
+  import {supabase} from '$lib/db';
+
 
   interface Props {
     lab: LiveLab;
@@ -125,26 +127,52 @@
 
       // Log the result to the console
       console.log("API Response:", llmOutput);
+      
+    // Save the response to the database
 
-      const llmMessage: Message = {
+    const { data, error } = await supabase
+    .from('GenAiResponses')
+    .insert(
+      {   role: 'assistant',
+          content:llmOutput,
+          contentUrl: window.location.href,
+          llmUsed: model_id,
+          helpful: false,
+        },
+    )
+    .select()
+
+    if (error) {
+  console.error("Error inserting data:", error.message); 
+} else {
+  console.log("Data inserted:", data);
+}
+       console.log("Data inserted:", data);
+       const responseId = data?.[0]?.responseId; 
+       console.log("Extracted responseId:", responseId);
+       const responseDate = data?.[0]?.responseDate; 
+       
+    const llmMessage: Message = {
           role: 'assistant',
           content:llmOutput,
-          responseId: Date.now(),
-          responseDate: new Date().toISOString(),
+          responseId: responseId,
+          responseDate: responseDate,
           contentUrl: window.location.href,
           llmUsed: model_id,
           helpful: false,
         };
-      
+
       console.log("llmMessage:", llmMessage);  
+      llmResponse.set(llmMessage);
       return llmMessage;
+
 
     } catch (error) {
       console.error('Error:', error);
           return {
         role: 'assistant',
         content: "An error occurred while fetching data.",
-        responseId: Date.now(),
+        responseId: undefined,
         responseDate: new Date().toISOString(),
         contentUrl: window.location.href,
         llmUsed: model_id,
@@ -164,9 +192,20 @@
     showEli5Button.set(false);
   }
 
-  async function updateMessageHelpful(helpful: boolean) {
-    llmResponse.update(content => ({ ...content, helpful }));
+async function updateMessageHelpful(responseId: string, helpful: boolean) {
+  const { data, error } = await supabase
+    .from('GenAiResponses')
+    .update({ helpful }) 
+    .eq('responseId', responseId)
+    .select();
+
+  if (error) {
+    console.error("Error updating helpful status:", error);
+  } else {
+    console.log("Update successful:", data);
   }
+}
+
 </script>
 
 <svelte:head>
@@ -236,8 +275,14 @@
       <p class="py-4">{$modalContent}</p>
         <div class="flex justify-end space-x-2">
         <button on:click={() => copyText($modalContent)}><i class="fa-solid fa-copy"></i></button>
-        <button on:click={() => updateMessageHelpful(false)}><i class="fa-solid fa-thumbs-down"></i></button>
-        <button on:click={() => updateMessageHelpful(true)}><i class="fa-solid fa-thumbs-up"></i></button>
+
+      <button on:click={() => updateMessageHelpful($llmResponse.responseId, false)} aria-label="Mark as not helpful">
+        <i class="fa-solid fa-thumbs-down"></i>
+      </button>
+
+      <button on:click={() => updateMessageHelpful($llmResponse.responseId, true)} aria-label="Mark as helpful">
+        <i class="fa-solid fa-thumbs-up"></i>
+      </button>
       </div>
     </div>
   </div>
