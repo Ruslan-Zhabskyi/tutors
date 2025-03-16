@@ -17,11 +17,13 @@
 
     interface Message {
     role: 'user' | 'assistant' | 'system';
+    userMessage?: string;
     content: string;
     responseId?: number;
     responseDate?: string;
     contentUrl?: string;
     llmUsed?: string;
+    feature?: string;
     helpful?: boolean;
   }
 
@@ -36,11 +38,13 @@
   let modalContent = writable(""); // see if I can remove this
   let llmResponse = writable<Message>({
     role: 'assistant',
+    userMessage: undefined,
     content: '',
     responseId: undefined,
     responseDate: undefined,
     contentUrl: undefined,
     llmUsed: undefined,
+    feature: undefined,
     helpful: undefined
   });
   let isLoading = writable(false);
@@ -134,9 +138,11 @@
     .from('GenAiResponses')
     .insert(
       {   role: 'assistant',
+          userMessage: userMessage,
           content:llmOutput,
           contentUrl: window.location.href,
           llmUsed: model_id,
+          feature: 'eli5',
           helpful: false,
         },
     )
@@ -154,11 +160,13 @@
        
     const llmMessage: Message = {
           role: 'assistant',
+          userMessage: userMessage,
           content:llmOutput,
           responseId: responseId,
           responseDate: responseDate,
           contentUrl: window.location.href,
           llmUsed: model_id,
+          feature: 'eli5',
           helpful: false,
         };
 
