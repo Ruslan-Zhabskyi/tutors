@@ -2,6 +2,7 @@
   import Heatmap from './Heatmap.svelte';
   import { supabase } from '$lib/db';
   import { writable } from 'svelte/store';
+  import { onMount } from 'svelte';
   
   let responses = writable<any[]>([]);
   let isLoading = writable(true);
@@ -26,7 +27,9 @@
     isLoading.set(false);
   }
 
+onMount(() => {
   fetchResponses();
+});
 </script>
 
 <div class="card to-accent-50 dark:to-accent-900 from-primary-50 dark:from-primary-900 m-4 border bg-gradient-to-l">

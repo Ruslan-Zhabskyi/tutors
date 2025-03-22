@@ -29,9 +29,15 @@
     selectedUrl = url;
   }
 
-  function getShortUrl(url: string): string {
-    return url.split('/').slice(-1)[0];
+function getShortUrl(url: string): string {
+  try {
+    const parsedUrl = new URL(url);
+    return parsedUrl.pathname;
+  } catch (error) {
+    console.error('Invalid URL:', url);
+    return url;
   }
+}
 
   function getHeatColor(count: number): string {
     const maxIntensity = Math.max(...heatmapData.map(d => d.totalResponses));
@@ -88,5 +94,20 @@
         {/each}
       </div>
     </div>
+      <div class="flex justify-center mt-4">
+        <button class="btn variant-filled-primary" on:click={() => alert(
+
+          `Selected URL: ${selectedUrl}\n\n` +
+          filteredResponses.map(r => 
+
+            `User Message: ${r.userMessage}\n` +
+            `Response: ${r.content}\n\n`
+          ).join('\n')
+ 
+        )}>
+          Alert!
+        </button>
+      </div>
   {/if}
+
 </div>
