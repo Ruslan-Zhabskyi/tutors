@@ -2,9 +2,10 @@
   import Heatmap from './Heatmap.svelte';
   import { supabase } from '$lib/db';
   import { writable } from 'svelte/store';
-
+  
   let responses = writable<any[]>([]);
-
+  let isLoading = writable(true);
+  
   async function fetchResponses() {
     const { data: GenAiResponses, error } = await supabase
       .from('GenAiResponses')
@@ -16,9 +17,13 @@
     }
 
     if (GenAiResponses) {
-      responses.set(GenAiResponses); 
-      console.log('Fetched responses:', GenAiResponses);
+      // Ensure the data is in JSON format
+      const jsonData = JSON.parse(JSON.stringify(GenAiResponses));
+      responses.set(jsonData); // Store the parsed JSON data
+      console.log('Fetched responses in JSON format:', jsonData);
     }
+
+    isLoading.set(false);
   }
 
   fetchResponses();
@@ -30,7 +35,11 @@
       <main class="container mx-auto p-4">
         <h1 class="h1 mb-4">LLM Response Heatmap</h1>
         <p class="mb-8">Click on a cell to see detailed responses for that URL</p>
-        <Heatmap data={$responses} /> 
+        {#if $isLoading}
+          <p>Loading responses...</p>
+        {:else}
+          <Heatmap data={$responses} />
+        {/if}
       </main>
     </div>
   </div>
