@@ -42,7 +42,9 @@
   });
 
   $: if (selectedUrl) {
-    filteredResponses = data.filter(d => d.contentUrl === selectedUrl && d.helpful === true);
+    filteredResponses = data
+      .filter(d => d.contentUrl === selectedUrl && d.helpful === true)
+      .map(d => ({ ...d, selected: false })); // Add `selected` property
   }
 
   function handleCellClick(url: string) {
@@ -56,6 +58,21 @@ function getShortUrl(url: string): string {
   } catch (error) {
     console.error('Invalid URL:', url);
     return url;
+  }
+}
+
+function getTopicUrl(selectedUrl: string): string {
+  try {
+    const parsedUrl = new URL(selectedUrl);
+    const segments = parsedUrl.pathname.split('/').filter(Boolean); 
+    if (segments[0] === 'lab') {
+      segments[0] = 'topic'; 
+    }
+    const topicPath = segments.slice(0, 3).join('/'); 
+    return `${parsedUrl.origin}/${topicPath}`; 
+  } catch (error) {
+    console.error('Invalid URL:', selectedUrl);
+    return selectedUrl; 
   }
 }
 
@@ -116,13 +133,13 @@ function getShortUrl(url: string): string {
       console.log("API Response:", llmOutput);
       
     // Save the response to the database
-
+    const topicUrl = getTopicUrl(selectedUrl);  
     const { data, error } = await supabase
     .from('AiContentRefiner')
     .insert(
       {   
     contentUrl: selectedUrl,
-    topicUrl: selectedUrl,
+    topicUrl: topicUrl,
     responseIds: [],
     llmUsed: model_id,
     generatedText:llmOutput,
@@ -146,7 +163,7 @@ function getShortUrl(url: string): string {
           refinedContentId: refinedContentId,
           dateGenerated: dateGenerated,
           contentUrl: selectedUrl,
-          topicUrl: selectedUrl,
+          topicUrl: topicUrl,
           responseIds: [],
           llmUsed: model_id,
           helpful: false, 
@@ -260,7 +277,6 @@ async function updateMessageHelpful(responseId: string, helpful: boolean) {
   on:click={() => {
     const selectedResponses = filteredResponses.filter(r => r.selected);
     sendMessage(
-      `Selected URL: ${selectedUrl}\n\n` +
       selectedResponses
         .map((r) => {
           if (r.feature === 'eli5') {
