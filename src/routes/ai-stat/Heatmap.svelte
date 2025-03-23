@@ -215,9 +215,28 @@ async function updateMessageHelpful(responseId: string, helpful: boolean) {
   }
 }
 
+//modal
+let modalOpen = writable(false);
+let modalContent = writable(""); 
 
+async function openModal() {
+  try {
+    const response = await sendMessage("", selectedUrl ?? "", []);
+    llmResponse.set(response);
+    modalContent.set(response.generatedText || "");
+    modalOpen.set(true); 
+  } catch (error) {
+    console.error("Error opening modal:", error);
+    alert("An error occurred while opening the modal. Please try again.");
+  } finally {
+    isLoading.set(false); 
+  }
+}
+
+  function closeModal() {
+    modalOpen.set(false);
+  }
 </script>
-
 <div class="space-y-8">
   <div class="card p-4 overflow-x-auto">
     <table class="table table-compact">
@@ -271,34 +290,69 @@ async function updateMessageHelpful(responseId: string, helpful: boolean) {
           {/each}
         </div>
     </div>
-      <div class="flex justify-center mt-4">
- <button
-  class="btn variant-filled-primary"
-  on:click={() => {
-    const selectedResponses = filteredResponses.filter(r => r.selected);
-    const responseIds = selectedResponses.map(r => r.responseId);
-    const responsesString = selectedResponses
-      .map((r) => {
-        if (r.feature === 'eli5') {
-          return (
-            `Uncleartext: ${r.userMessage}\n` +
-            `Liked LLM Response: ${r.content}\n\n`
-          );
-        } else {
-          return (
-            `User Question: ${r.userMessage}\n` +
-            `Liked LLM Response: ${r.content}\n\n`
-          );
-        }
-      })
-      .join('\n');
+    
+    <div class="flex justify-center mt-4">
+  {#if $isLoading}
+    <button class="btn variant-filled-primary" disabled>
+      <span class="spinner-border spinner-border-sm mr-2"></span>
+      Generating Content...
+    </button>
+  {:else}
+    <button
+      class="btn px-4 py-2 bg-gray-500 text-white rounded"
+      on:click={async () => {
+        const selectedResponses = filteredResponses.filter(r => r.selected);
 
-    sendMessage(responsesString, selectedUrl ?? '', responseIds);
-  }}
->
-  Generate New Content
-</button>
-      </div>
+        if (selectedResponses.length === 0) {
+          alert("Please select at least one response.");
+          return;
+        }
+
+        const responseIds = selectedResponses.map(r => r.responseId);
+
+
+        const responsesString = selectedResponses
+          .map((r) => {
+            if (r.feature === "eli5") {
+              return (
+                `Uncleartext: ${r.userMessage}\n` +
+                `Liked LLM Response: ${r.content}\n\n`
+              );
+            } else {
+              return (
+                `User Question: ${r.userMessage}\n` +
+                `Liked LLM Response: ${r.content}\n\n`
+              );
+            }
+          })
+          .join("\n");
+
+        isLoading.set(true);
+        try {
+          await sendMessage(responsesString, selectedUrl ?? "", responseIds);
+          openModal();
+        } catch (error) {
+          console.error("Error generating content:", error);
+          alert("An error occurred while generating content. Please try again.");
+          isLoading.set(false);
+        }
+      }}
+    >
+      Generate New Content
+    </button>
+  {/if}
+</div>
   {/if}
 
+{#if $modalOpen}
+  <div class="modal modal-open fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+    <div class="modal-box bg-white p-6 rounded shadow-lg w-2/3 max-h-[80vh] overflow-y-auto">
+      <h3 class="font-bold text-lg mb-4">Generated Content</h3>
+      <div class="prose max-w-none">{$modalContent}</div>
+      <div class="flex justify-end mt-4">
+        <button class="btn btn-primary" on:click={closeModal}>Close</button>
+      </div>
+    </div>
+  </div>
+{/if}
 </div>
