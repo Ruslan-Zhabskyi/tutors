@@ -111,7 +111,7 @@ function getTopicUrl(selectedUrl: string): string {
 
   let isLoading = writable(false);
 
-  async function sendMessage(responses:string,selectedUrl:string): Promise<Message> {
+  async function sendMessage(responses:string,selectedUrl:string, responseIds: string[]): Promise<Message> {
     const userMessage = responses.trim();
     isLoading.set(true);
 
@@ -140,7 +140,7 @@ function getTopicUrl(selectedUrl: string): string {
       {   
     contentUrl: selectedUrl,
     topicUrl: topicUrl,
-    responseIds: [],
+    responseIds: responseIds,
     llmUsed: model_id,
     generatedText:llmOutput,
     helpful: false, 
@@ -164,7 +164,7 @@ function getTopicUrl(selectedUrl: string): string {
           dateGenerated: dateGenerated,
           contentUrl: selectedUrl,
           topicUrl: topicUrl,
-          responseIds: [],
+          responseIds: responseIds,
           llmUsed: model_id,
           helpful: false, 
         };
@@ -276,24 +276,24 @@ async function updateMessageHelpful(responseId: string, helpful: boolean) {
   class="btn variant-filled-primary"
   on:click={() => {
     const selectedResponses = filteredResponses.filter(r => r.selected);
-    sendMessage(
-      selectedResponses
-        .map((r) => {
-          if (r.feature === 'eli5') {
-            return (
-              `Uncleartext: ${r.userMessage}\n` +
-              `Liked LLM Response: ${r.content}\n\n`
-            );
-          } else {
-            return (
-              `User Question: ${r.userMessage}\n` +
-              `Liked LLM Response: ${r.content}\n\n`
-            );
-          }
-        })
-        .join('\n'),
-      selectedUrl ?? ''
-    );
+    const responseIds = selectedResponses.map(r => r.responseId);
+    const responsesString = selectedResponses
+      .map((r) => {
+        if (r.feature === 'eli5') {
+          return (
+            `Uncleartext: ${r.userMessage}\n` +
+            `Liked LLM Response: ${r.content}\n\n`
+          );
+        } else {
+          return (
+            `User Question: ${r.userMessage}\n` +
+            `Liked LLM Response: ${r.content}\n\n`
+          );
+        }
+      })
+      .join('\n');
+
+    sendMessage(responsesString, selectedUrl ?? '', responseIds);
   }}
 >
   Generate New Content
