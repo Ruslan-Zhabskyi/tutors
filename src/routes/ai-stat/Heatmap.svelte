@@ -1,6 +1,7 @@
 <script lang="ts">
   import { writable } from "svelte/store";
   import {supabase} from '$lib/db';
+  import { marked } from 'marked';
   export let data: any[];
 
   let selectedUrl: string | null = null;
@@ -111,8 +112,9 @@ function getTopicUrl(selectedUrl: string): string {
 
   let isLoading = writable(false);
 
-  async function sendMessage(responses:string,selectedUrl:string, responseIds: string[]): Promise<Message> {
+  async function sendMessage(responses:string, selectedUrl:string, responseIds: string[]): Promise<Message> {
     const userMessage = responses.trim();
+    console.log("Selected responces for LLM analysis:", userMessage);
     isLoading.set(true);
 
     try {
@@ -122,7 +124,7 @@ function getTopicUrl(selectedUrl: string): string {
         body: JSON.stringify({
           model_id: model_id,
           project_id: project_id,
-          prompt: `Create page for tutors website based on responces to student questions: "${userMessage}". I want it to be not question - answer, but as seamless article`,
+          prompt: `Summarise students input ${userMessage} into an article. Ensure that it reads as seamless article`,
         }),
       });
 
@@ -192,46 +194,32 @@ function getTopicUrl(selectedUrl: string): string {
     }
   }
 
-  // async function copyText(textToCopy: any) {
-  //   try {
-  //     await navigator.clipboard.writeText(textToCopy);
-  //   } catch (err) {
-  //     console.error('Failed to copy text:', err);
-  //   }
-  //   showEli5Button.set(false);
-  // }
-
-async function updateMessageHelpful(responseId: string, helpful: boolean) {
-  const { data, error } = await supabase
-    .from('GenAiResponses')
-    .update({ helpful }) 
-    .eq('responseId', responseId)
-    .select();
-
-  if (error) {
-    console.error("Error updating helpful status:", error);
-  } else {
-    console.log("Update successful:", data);
+  async function copyText(textToCopy: any) {
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+    } catch (err) {
+      console.error('Failed to copy text:', err);
+    }
   }
-}
 
 //modal
 let modalOpen = writable(false);
 let modalContent = writable(""); 
 
-async function openModal() {
+async function openModal(responses: string, responseIds: string[]) {
   try {
-    const response = await sendMessage("", selectedUrl ?? "", []);
+    const response = await sendMessage(responses, selectedUrl ?? "", responseIds);
     llmResponse.set(response);
     modalContent.set(response.generatedText || "");
-    modalOpen.set(true); 
+    modalOpen.set(true);
   } catch (error) {
     console.error("Error opening modal:", error);
     alert("An error occurred while opening the modal. Please try again.");
   } finally {
-    isLoading.set(false); 
+    isLoading.set(false);
   }
 }
+
 
   function closeModal() {
     modalOpen.set(false);
@@ -299,60 +287,69 @@ async function openModal() {
     </button>
   {:else}
     <button
-      class="btn px-4 py-2 bg-gray-500 text-white rounded"
-      on:click={async () => {
-        const selectedResponses = filteredResponses.filter(r => r.selected);
+  class="btn px-4 py-2 bg-gray-500 text-white rounded"
+  on:click={async () => {
+    const selectedResponses = filteredResponses.filter(r => r.selected);
 
-        if (selectedResponses.length === 0) {
-          alert("Please select at least one response.");
-          return;
-        }
+    if (selectedResponses.length === 0) {
+      alert("Please select at least one response.");
+      return;
+    }
 
-        const responseIds = selectedResponses.map(r => r.responseId);
+    const responseIds = selectedResponses.map(r => r.responseId);
 
+    const responsesString = selectedResponses
+      .map((r) => `User Question: ${r.userMessage}\nLiked LLM Response: ${r.content}\n\n`)
+      .join("\n");
 
-        const responsesString = selectedResponses
-          .map((r) => {
-            if (r.feature === "eli5") {
-              return (
-                `Uncleartext: ${r.userMessage}\n` +
-                `Liked LLM Response: ${r.content}\n\n`
-              );
-            } else {
-              return (
-                `User Question: ${r.userMessage}\n` +
-                `Liked LLM Response: ${r.content}\n\n`
-              );
-            }
-          })
-          .join("\n");
+    console.log("Sending responses to LLM:", responsesString);
 
-        isLoading.set(true);
-        try {
-          await sendMessage(responsesString, selectedUrl ?? "", responseIds);
-          openModal();
-        } catch (error) {
-          console.error("Error generating content:", error);
-          alert("An error occurred while generating content. Please try again.");
-          isLoading.set(false);
-        }
-      }}
-    >
-      Generate New Content
-    </button>
+    isLoading.set(true);
+    try {
+      await openModal(responsesString, responseIds);
+    } catch (error) {
+      console.error("Error generating content:", error);
+      alert("An error occurred while generating content. Please try again.");
+      isLoading.set(false);
+    }
+  }}
+>
+  Generate New Content
+</button>
   {/if}
 </div>
   {/if}
 
 {#if $modalOpen}
-  <div class="modal modal-open fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-    <div class="modal-box bg-white p-6 rounded shadow-lg w-2/3 max-h-[80vh] overflow-y-auto">
+  <div 
+    class="modal modal-open fixed inset-0 flex items-center justify-center bg-black bg-opacity-50" 
+    on:click={closeModal}
+  >
+    <div 
+      class="modal-box bg-white p-6 rounded shadow-lg w-2/3 max-h-[80vh] overflow-y-auto"
+      on:click|stopPropagation
+    >
       <h3 class="font-bold text-lg mb-4">Generated Content</h3>
-      <div class="prose max-w-none">{$modalContent}</div>
-      <div class="flex justify-end mt-4">
-        <button class="btn btn-primary" on:click={closeModal}>Close</button>
+      <div class="prose max-w-none">
+        <!-- {@html $modalContent} -->
+        {@html marked($modalContent)}
+      </div>
+      <div class="flex justify-end space-x-2 mt-4">
+        <button 
+          class="btn btn-outline"
+          on:click={() => copyText($modalContent)}
+        >
+          <i class="fa-solid fa-copy"></i>
+        </button>
+        <!-- <button 
+          class="btn btn-primary"
+          on:click={closeModal}
+        >
+          Close
+        </button> -->
       </div>
     </div>
   </div>
 {/if}
+
 </div>
