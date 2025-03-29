@@ -94,11 +94,11 @@ function getTopicUrl(selectedUrl: string): string {
 
   let isLoading = writable(false);
 
-  async function sendMessage(responses:string, selectedUrl:string, responseIds: string[]): Promise<Message> {
+  async function sendMessage(responses:string, selectedUrl:string, responseIds: string[], pageContent: string): Promise<Message> {
     const userMessage = responses.trim();
     console.log("Selected responces for LLM analysis:", userMessage);
     isLoading.set(true);
-
+    console.log("Page content:", pageContent);
     try {
       const response = await fetch('/api/summarise-search-background', {
         method: 'POST',
@@ -106,7 +106,14 @@ function getTopicUrl(selectedUrl: string): string {
         body: JSON.stringify({
           model_id: model_id,
           project_id: project_id,
-          prompt: `Summarise students input ${userMessage} into an article. Ensure that it reads as seamless article`,
+          prompt: `Here is the content of a lab that student was following: ${pageContent}. There was some text that student did
+          no understand. Your task is to make small adjustments based on students' feedback: ${userMessage}. 
+          Instructions:
+          1. Carefully check lab content and students' feedback. 
+          2. Identify areas where the content can be improved.
+          3. Make small adjustments to the content.
+          4. Ensure that the content is still relevant to the lab.
+          5. Do not expose students questions or feedback.`,
         }),
       });
 
@@ -188,9 +195,9 @@ function getTopicUrl(selectedUrl: string): string {
 let modalOpen = writable(false);
 let modalContent = writable(""); 
 
-async function openModal(responses: string, responseIds: string[]) {
+async function openModal(responses: string, responseIds: string[], pageContent: string) {
   try {
-    const response = await sendMessage(responses, selectedUrl ?? "", responseIds);
+    const response = await sendMessage(responses, selectedUrl ?? "", responseIds, pageContent);
     llmResponse.set(response);
     modalContent.set(response.generatedText || "");
     modalOpen.set(true);
@@ -279,7 +286,9 @@ async function openModal(responses: string, responseIds: string[]) {
     }
 
     const responseIds = selectedResponses.map(r => r.responseId);
-
+    
+    const pageContent = data.find(d => d.contentUrl === selectedUrl)?.pageContent || "";
+    
     const responsesString = selectedResponses
       .map((r) => `User Question: ${r.userMessage}\nLiked LLM Response: ${r.content}\n\n`)
       .join("\n");
@@ -288,7 +297,7 @@ async function openModal(responses: string, responseIds: string[]) {
 
     isLoading.set(true);
     try {
-      await openModal(responsesString, responseIds);
+      await openModal(responsesString, responseIds, pageContent);
     } catch (error) {
       console.error("Error generating content:", error);
       alert("An error occurred while generating content. Please try again.");
