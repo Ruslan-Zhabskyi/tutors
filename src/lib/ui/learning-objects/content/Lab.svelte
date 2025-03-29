@@ -9,7 +9,9 @@
   import { currentCodeTheme } from "$lib/services/markdown";
   import { writable } from "svelte/store";
   import {supabase} from '$lib/db';
-
+  import {currentLo, currentLabStepIndex } from "$lib/runes.svelte";
+  import { marked } from 'marked';
+  let pageContent = currentLo?.value?.los[currentLabStepIndex?.value].contentMd;
 
   interface Props {
     lab: LiveLab;
@@ -22,6 +24,7 @@
     responseId?: number;
     responseDate?: string;
     contentUrl?: string;
+    pageContent?: string;
     llmUsed?: string;
     feature?: string;
     helpful?: boolean;
@@ -42,6 +45,7 @@
     content: '',
     responseId: undefined,
     responseDate: undefined,
+    pageContent: undefined,
     contentUrl: undefined,
     llmUsed: undefined,
     feature: undefined,
@@ -141,6 +145,7 @@
           userMessage: userMessage,
           content:llmOutput,
           contentUrl: window.location.href,
+          pageContent: pageContent,
           llmUsed: model_id,
           feature: 'eli5',
           helpful: false,
@@ -165,6 +170,7 @@
           responseId: responseId,
           responseDate: responseDate,
           contentUrl: window.location.href,
+          pageContent: pageContent,
           llmUsed: model_id,
           feature: 'eli5',
           helpful: false,
@@ -183,6 +189,7 @@
         responseId: undefined,
         responseDate: new Date().toISOString(),
         contentUrl: window.location.href,
+        pageContent: pageContent,
         llmUsed: model_id,
         helpful: false,
       };
@@ -280,7 +287,7 @@ async function updateMessageHelpful(responseId: string, helpful: boolean) {
   <div class="modal modal-open fixed inset-0 flex items-center justify-start bg-black bg-opacity-50" on:click={closeModal}>
     <div class="modal-box bg-white p-4 rounded shadow-lg w-2/3" on:click|stopPropagation>
       <h3 class="font-bold text-lg">Tutors AI Explanation</h3>
-      <p class="py-4">{$modalContent}</p>
+      <p class="py-4">{@html marked ($modalContent)}</p>
         <div class="flex justify-end space-x-2">
         <button on:click={() => copyText($modalContent)}><i class="fa-solid fa-copy"></i></button>
 
