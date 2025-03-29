@@ -26,6 +26,7 @@
     responseId?: number;
     responseDate?: string;
     contentUrl?: string;
+    pageContent?: string;
     llmUsed?: string;
     feature?: string;
     helpful?: boolean;
@@ -90,6 +91,7 @@ async function sendMessage(): Promise<void> {
                   userMessage: userMessage,
                   content: assistantResponse,
                   contentUrl: window.location.href,
+                  pageContent: pageContent,
                   llmUsed: selectedModel,
                   feature: 'Chat Tutors AI',
                   helpful: false,
@@ -114,6 +116,7 @@ async function sendMessage(): Promise<void> {
             content: assistantResponse,
             responseId: responseId,
             responseDate: responseDate,
+            pageContent: pageContent,
             contentUrl: window.location.href,
             llmUsed: selectedModel,
             helpful: false,
