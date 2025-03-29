@@ -7,24 +7,6 @@
   let selectedUrl: string | null = null;
   let filteredResponses: any[] = [];
   
-// let pageContent: string = '';
-
-// $: if (selectedUrl) {
-//   filteredResponses = data.filter(d => d.contentUrl === selectedUrl && d.helpful === true);
-//   fetchPageContent(selectedUrl); 
-// }
-
-// async function fetchPageContent(url: string) {
-//   try {
-//     console.log('Fetching content from URL:', url); // Log the URL
-//     const response = await fetch(url);
-//     if (!response.ok) throw new Error(`Error: ${response.statusText}`);
-//     pageContent = await response.text();
-//   } catch (error) {
-//     console.error("Failed to load content:", error);
-//     pageContent = "Error loading content.";
-//   }
-// }
   // Get unique URLs and features
   const urls = [...new Set(data.map(d => d.contentUrl))];
   const features = [...new Set(data.map(d => d.feature))];
