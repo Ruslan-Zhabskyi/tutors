@@ -134,6 +134,7 @@
       const llmOutput = result?.results?.[0]?.generated_text || "No results found.";
 
       // Log the result to the console
+      console.log("API result:", result);
       console.log("API Response:", llmOutput);
       
     // Save the response to the database

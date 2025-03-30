@@ -68,6 +68,7 @@
             throw new Error(`HTTP error! Status: ${response.status}`);
         }
         const data = await response.json();
+        console.log("Google API Response:", data);
 
       const filteredItems: SearchResult[] = data.items?.map((item: SearchResult) => ({
             displayLink: item.displayLink,

@@ -107,7 +107,7 @@ function getTopicUrl(selectedUrl: string): string {
           model_id: model_id,
           project_id: project_id,
           prompt: `Here is the content of a lab that student was following: ${pageContent}. There was some text that student did
-          no understand. Your task is to make small adjustments based on students' feedback: ${userMessage}. 
+          not understand. Your task is to make small adjustments based on students' feedback: ${userMessage}. 
           Instructions:
           1. Carefully check lab content and students' feedback. 
           2. Identify areas where the content can be improved.
@@ -121,6 +121,7 @@ function getTopicUrl(selectedUrl: string): string {
       const llmOutput = result?.results?.[0]?.generated_text || "No results found.";
 
       // Log the result to the console
+      console.log("API result:", result);
       console.log("API Response:", llmOutput);
       
     // Save the response to the database

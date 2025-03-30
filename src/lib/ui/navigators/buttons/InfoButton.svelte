@@ -12,10 +12,11 @@
   import '@fortawesome/fontawesome-free/css/all.min.css';
   import {supabase} from '$lib/db';
   export let tutorsAI: string = '/icons/tutorsAI.png';
-
     let topic = currentCourse?.value?.contentHtml;
     let topicDescription= currentLo?.value?.contentMd;
     let pageContent = currentLo?.value?.los[currentLabStepIndex?.value].contentMd;
+
+  console.log("Updated pageContent:", pageContent);
 
   let elemChat: HTMLElement;
 
@@ -38,8 +39,7 @@
   let systemMessage:Message = {
     role: 'system',
     content: `you are assisting Computer Science Higher Diploma students to understand content. \
-     Always explain like they are five years old.\
-     At this stage student explores ${topic}. that student is currently studdies: \
+     At this stage student explores ${topic}. that student is currently studies: \
      Particularly student focused on: ${topicDescription}\
      The full text of the page student currently explores is ${pageContent}`
   }
