@@ -1,92 +1,93 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import {filterByType } from "$lib/services/course";
+  import { filterByType } from "$lib/services/course";
   import type { Lo } from "$lib/services/base";
   import type { Course } from "$lib/services/base";
   import type { PageData } from "./$types";
   import { currentLo } from "$lib/runes.svelte";
-  import { marked } from 'marked';
+  import { marked } from "marked";
   import { writable } from "svelte/store";
-  import {supabase} from '$lib/db';
+  import { supabase } from "$lib/db";
   interface Props {
     data: PageData;
-  };
+  }
 
   let { data }: Props = $props();
 
   let course: Course;
   let searchLos: Lo[] = [];
-  let project_id: string = '68f58c24-1633-429d-bb39-cb0947f86d02'
-  
+  let project_id: string = "68f58c24-1633-429d-bb39-cb0947f86d02";
+
   let searchInputElement = $state();
   let isLoading = $state(false);
   // AI variables
   // svelte-ignore non_reactive_update
-  let searchTerm: string = '';
-  // let llmOutput: string = "";
-  let model_id: string = 'ibm/granite-3-8b-instruct'; 
+  let searchTerm: string = "";
+  let model_id: string = "ibm/granite-3-8b-instruct";
 
   let llmSearchResponse = writable<AISearchSummary>({
-      searchId: undefined,
-      searchDate: undefined,
-      searchPhrase: '',
-      searchResult: '',
-      llmUsed: model_id,
-      helpful: undefined,
+    searchId: undefined,
+    searchDate: undefined,
+    searchPhrase: "",
+    searchResult: "",
+    llmUsed: model_id,
+    helpful: undefined
   });
 
-    interface AISearchSummary {
-      searchId?: number;
-      searchDate?: string;
-      searchPhrase: string;
-      searchResult: string;
-      llmUsed: string;
-      helpful?: boolean;
-    };
+  interface AISearchSummary {
+    searchId?: number;
+    searchDate?: string;
+    searchPhrase: string;
+    searchResult: string;
+    llmUsed: string;
+    helpful?: boolean;
+  }
 
-    interface SearchResult {
-      displayLink: string;
-      link: string;
-      title: string;
-      snippet: string;
-    };
+  interface SearchResult {
+    displayLink: string;
+    link: string;
+    title: string;
+    snippet: string;
+  }
 
-    interface SearchResults {
-      summary: string;
-      results: SearchResult[]
-    };
-      // Google API search
+  interface SearchResults {
+    summary: string;
+    results: SearchResult[];
+  }
+  
+  // Google API search
   async function googleSearch(): Promise<string> {
-      const apiKey = import.meta.env.VITE_Custom_Search_API_KEY;
-      const cx = import.meta.env.VITE_Search_engine_id;
-      const url = `https://customsearch.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cx}&q=${searchTerm}`;
+    const apiKey = import.meta.env.VITE_Custom_Search_API_KEY;
+    const cx = import.meta.env.VITE_Search_engine_id;
+    const url = `https://customsearch.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cx}&q=${searchTerm}`;
     try {
       const response = await fetch(url, {
-            method: 'GET'
-        });
+        method: "GET"
+      });
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        const data = await response.json();
-        console.log("Google API Response:", data);
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const data = await response.json();
+      console.log("Google API Response:", data);
 
-      const filteredItems: SearchResult[] = data.items?.map((item: SearchResult) => ({
-            displayLink: item.displayLink,
-            link: item.link,
-            title: item.title,
-            snippet: item.snippet,
-          })) || [];
+      const filteredItems: SearchResult[] =
+        data.items?.map((item: SearchResult) => ({
+          displayLink: item.displayLink,
+          link: item.link,
+          title: item.title,
+          snippet: item.snippet
+        })) || [];
 
-        const jsonOutput = JSON.stringify(filteredItems, null, 2);
-        console.log("Search Results:", jsonOutput);  
+      const jsonOutput = JSON.stringify(filteredItems, null, 2);
+      console.log("Search Results:", jsonOutput);
 
-        return jsonOutput;
+      return jsonOutput;
     } catch (error) {
-        console.error('Error fetching data:', error);
-        return JSON.stringify([]);
+      console.error("Error fetching data:", error);
+      return JSON.stringify([]);
     }
-};
+  }
 
   // LLM call
   async function sendMessage(): Promise<void> {
@@ -94,11 +95,11 @@
     isLoading = true;
 
     let searchResults: string = await googleSearch();
-    
+
     try {
-      const response = await fetch('/api/summarise-search-background', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/summarise-search-background", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model_id: model_id,
           project_id: project_id,
@@ -128,51 +129,43 @@
                 3. **{Title}** - {Exact Link}  
                 4. **{Title}** - {Exact Link}  
                 5. **{Title}** - {Exact Link}  
-                `,         
-        }),
+                `
+        })
       });
 
-  
-    const result = await response.json(); 
-    console.log("API Response:", result);
-    let generatedText = result.results[0].generated_text || "No results found.";
-    let cleanedText = generatedText.split("**Output:**").pop()?.trim() || "No results found.";
-    cleanedText = cleanedText.replace(/^\*\*Note:\*\*.*?\n\n/i, "").trim();
-    
-            //supabase insert
-          const { data, error } = await supabase
-            .from('AISearch')
-            .insert(
-              {   searchPhrase: searchTerm,
-                  searchResult: cleanedText,
-                  llmUsed: model_id,
-                  helpful: false,
-                },
-            )
-            .select()
+      const result = await response.json();
+      console.log("API Response:", result);
+      let generatedText = result.results[0].generated_text || "No results found.";
+      let cleanedText = generatedText.split("**Output:**").pop()?.trim() || "No results found.";
+      cleanedText = cleanedText.replace(/^\*\*Note:\*\*.*?\n\n/i, "").trim();
 
-            if (error) {
-          console.error("Error inserting data:", error.message); 
-        } else {
-          console.log("Data inserted:", data);
-        }
+      //supabase insert
+      const { data, error } = await supabase
+        .from("AISearch")
+        .insert({ searchPhrase: searchTerm, searchResult: cleanedText, llmUsed: model_id, helpful: false })
+        .select();
 
-       console.log("Data inserted:", data);
+      if (error) {
+        console.error("Error inserting data:", error.message);
+      } else {
+        console.log("Data inserted:", data);
+      }
 
-    const llmSearchResponseData: AISearchSummary = {
-          searchId: Date.now(),
-          searchDate: new Date().toISOString(),
-          searchPhrase: searchTerm,
-          searchResult: cleanedText,
-          llmUsed: model_id,
-          helpful: false
-        };
+      console.log("Data inserted:", data);
 
-      console.log("llmSearchResponse:", llmSearchResponseData);  
+      const llmSearchResponseData: AISearchSummary = {
+        searchId: Date.now(),
+        searchDate: new Date().toISOString(),
+        searchPhrase: searchTerm,
+        searchResult: cleanedText,
+        llmUsed: model_id,
+        helpful: false
+      };
+
+      console.log("llmSearchResponse:", llmSearchResponseData);
       llmSearchResponse.set(llmSearchResponseData);
-
-  } catch (error) {
-      console.error('Error:', error);
+    } catch (error) {
+      console.error("Error:", error);
       llmSearchResponse.set({
         searchId: Date.now(),
         searchDate: new Date().toISOString(),
@@ -184,15 +177,14 @@
     } finally {
       isLoading = false;
     }
-};
+  }
 
- function handleKeyDown(event: KeyboardEvent): void {
-    if (event.key === 'Enter' && !event.shiftKey) {
+  function handleKeyDown(event: KeyboardEvent): void {
+    if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       sendMessage();
     }
   }
-
 
   onMount(() => {
     course = data.course;
@@ -201,7 +193,6 @@
     searchInputElement?.focus();
   });
 </script>
-
 
 <section>
   <div class="container card mx-auto mb-4 p-4">
@@ -214,31 +205,31 @@
         type="text"
         name="aisearch"
         id="aisearch"
-        class="input m-2 p-2 border rounded"
+        class="input m-2 rounded border p-2"
         placeholder="..."
       />
     </label>
   </div>
 
   <div class="flex justify-center">
-    <button 
-      on:click={sendMessage} 
-      class="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-900 disabled:opacity-50"
+    <button
+      on:click={sendMessage}
+      class="rounded bg-gray-800 px-4 py-2 text-white hover:bg-gray-900 disabled:opacity-50"
       disabled={isLoading}
     >
       {isLoading ? "Searching" : "Tutors AI Search"}
-    </button> 
+    </button>
   </div>
 </section>
 
 <section class="mt-4">
   {#if isLoading}
-    <p class="text-center italic text-secondary">...</p>
+    <p class="text-secondary text-center italic">...</p>
   {:else if !$llmSearchResponse.searchResult}
     <h1 class="text-center text-2xl font-bold">What can I help with? Type your search term and hit Enter</h1>
   {:else}
-   <div class="px-6 py-4 my-4">
-    <p>{@html marked($llmSearchResponse.searchResult)}</p>
+    <div class="my-4 px-6 py-4">
+      <p>{@html marked($llmSearchResponse.searchResult)}</p>
     </div>
   {/if}
 </section>

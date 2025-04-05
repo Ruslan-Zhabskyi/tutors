@@ -52,7 +52,7 @@
         {#if currentCourse?.value && !currentCourse?.value?.isPortfolio}
           <AiPoweredSearchButton />
         {/if}
-      </div>       
+      </div>
     </div>
     <div class="flex items-center">
       <LayoutMenu />
