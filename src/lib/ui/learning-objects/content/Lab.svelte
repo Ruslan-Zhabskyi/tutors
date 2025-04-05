@@ -8,17 +8,17 @@
   import { slideFromLeft } from "$lib/ui/navigators/animations";
   import { currentCodeTheme } from "$lib/services/markdown";
   import { writable } from "svelte/store";
-  import {supabase} from '$lib/db';
-  import {currentLo, currentLabStepIndex } from "$lib/runes.svelte";
-  import { marked } from 'marked';
+  import { supabase } from "$lib/db";
+  import { currentLo, currentLabStepIndex } from "$lib/runes.svelte";
+  import { marked } from "marked";
   let pageContent = currentLo?.value?.los[currentLabStepIndex?.value].contentMd;
 
   interface Props {
     lab: LiveLab;
   }
 
-    interface Message {
-    role: 'user' | 'assistant' | 'system';
+  interface Message {
+    role: "user" | "assistant" | "system";
     userMessage?: string;
     content: string;
     responseId?: number;
@@ -31,8 +31,8 @@
   }
 
   let { lab }: Props = $props();
-  let project_id: string = '68f58c24-1633-429d-bb39-cb0947f86d02';
-  let model_id: string = 'ibm/granite-3-8b-instruct';
+  let project_id: string = "68f58c24-1633-429d-bb39-cb0947f86d02";
+  let model_id: string = "ibm/granite-3-8b-instruct";
   let isLoaded = writable(false);
   let selectedText = writable("");
   let showEli5Button = writable(false);
@@ -40,9 +40,9 @@
   let modalOpen = writable(false);
   let modalContent = writable(""); // see if I can remove this
   let llmResponse = writable<Message>({
-    role: 'assistant',
+    role: "assistant",
     userMessage: undefined,
-    content: '',
+    content: "",
     responseId: undefined,
     responseDate: undefined,
     pageContent: undefined,
@@ -120,14 +120,14 @@
     isLoading.set(true);
 
     try {
-      const response = await fetch('/api/summarise-search-background', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/summarise-search-background", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model_id: model_id,
           project_id: project_id,
-          prompt: `You need to explain like I am five: "${userMessage}"`,
-        }),
+          prompt: `You need to explain like I am five: "${userMessage}"`
+        })
       });
 
       const result = await response.json();
@@ -136,63 +136,60 @@
       // Log the result to the console
       console.log("API result:", result);
       console.log("API Response:", llmOutput);
-      
-    // Save the response to the database
 
-    const { data, error } = await supabase
-    .from('GenAiResponses')
-    .insert(
-      {   role: 'assistant',
+      // Save the response to the database
+
+      const { data, error } = await supabase
+        .from("GenAiResponses")
+        .insert({
+          role: "assistant",
           userMessage: userMessage,
-          content:llmOutput,
+          content: llmOutput,
           contentUrl: window.location.href,
           pageContent: pageContent,
           llmUsed: model_id,
-          feature: 'eli5',
-          helpful: false,
-        },
-    )
-    .select()
+          feature: "eli5",
+          helpful: false
+        })
+        .select();
 
-    if (error) {
-  console.error("Error inserting data:", error.message); 
-} else {
-  console.log("Data inserted:", data);
-}
-       console.log("Data inserted:", data);
-       const responseId = data?.[0]?.responseId; 
-       console.log("Extracted responseId:", responseId);
-       const responseDate = data?.[0]?.responseDate; 
-       
-    const llmMessage: Message = {
-          role: 'assistant',
-          userMessage: userMessage,
-          content:llmOutput,
-          responseId: responseId,
-          responseDate: responseDate,
-          contentUrl: window.location.href,
-          pageContent: pageContent,
-          llmUsed: model_id,
-          feature: 'eli5',
-          helpful: false,
-        };
+      if (error) {
+        console.error("Error inserting data:", error.message);
+      } else {
+        console.log("Data inserted:", data);
+      }
+      console.log("Data inserted:", data);
+      const responseId = data?.[0]?.responseId;
+      console.log("Extracted responseId:", responseId);
+      const responseDate = data?.[0]?.responseDate;
 
-      console.log("llmMessage:", llmMessage);  
+      const llmMessage: Message = {
+        role: "assistant",
+        userMessage: userMessage,
+        content: llmOutput,
+        responseId: responseId,
+        responseDate: responseDate,
+        contentUrl: window.location.href,
+        pageContent: pageContent,
+        llmUsed: model_id,
+        feature: "eli5",
+        helpful: false
+      };
+
+      console.log("llmMessage:", llmMessage);
       llmResponse.set(llmMessage);
       return llmMessage;
-
-
     } catch (error) {
-      console.error('Error:', error);
-          return {
-        role: 'assistant',
+      console.error("Error:", error);
+      return {
+        role: "assistant",
         content: "An error occurred while fetching data.",
         responseId: undefined,
         responseDate: new Date().toISOString(),
         contentUrl: window.location.href,
         pageContent: pageContent,
         llmUsed: model_id,
-        helpful: false,
+        helpful: false
       };
     } finally {
       isLoading.set(false);
@@ -203,25 +200,24 @@
     try {
       await navigator.clipboard.writeText(textToCopy);
     } catch (err) {
-      console.error('Failed to copy text:', err);
+      console.error("Failed to copy text:", err);
     }
     showEli5Button.set(false);
   }
 
-async function updateMessageHelpful(responseId: string, helpful: boolean) {
-  const { data, error } = await supabase
-    .from('GenAiResponses')
-    .update({ helpful }) 
-    .eq('responseId', responseId)
-    .select();
+  async function updateMessageHelpful(responseId: string, helpful: boolean) {
+    const { data, error } = await supabase
+      .from("GenAiResponses")
+      .update({ helpful })
+      .eq("responseId", responseId)
+      .select();
 
-  if (error) {
-    console.error("Error updating helpful status:", error);
-  } else {
-    console.log("Update successful:", data);
+    if (error) {
+      console.error("Error updating helpful status:", error);
+    } else {
+      console.log("Update successful:", data);
+    }
   }
-}
-
 </script>
 
 <svelte:head>
@@ -270,35 +266,38 @@ async function updateMessageHelpful(responseId: string, helpful: boolean) {
 </div>
 
 {#if $showEli5Button}
-<button 
-  type="button" 
-  class="btn px-4 py-2 bg-gray-500 text-white rounded"
-  on:click={openModal}
-  style="position: absolute; top: {$buttonPosition.top}px; left: {$buttonPosition.left}px;"
->
-  {#if $isLoading}
-        Loading...
-      {:else}
-        Explain like I am five
-  {/if}
-</button>
+  <button
+    type="button"
+    class="btn rounded bg-gray-500 px-4 py-2 text-white"
+    on:click={openModal}
+    style="position: absolute; top: {$buttonPosition.top}px; left: {$buttonPosition.left}px;"
+  >
+    {#if $isLoading}
+      Loading...
+    {:else}
+      Explain like I am five
+    {/if}
+  </button>
 {/if}
 
 {#if $modalOpen}
-  <div class="modal modal-open fixed inset-0 flex items-center justify-start bg-black bg-opacity-50" on:click={closeModal}>
-    <div class="modal-box bg-white p-4 rounded shadow-lg w-2/3" on:click|stopPropagation>
-      <h3 class="font-bold text-lg">Tutors AI Explanation</h3>
-      <p class="py-4">{@html marked ($modalContent)}</p>
-        <div class="flex justify-end space-x-2">
+  <div
+    class="modal modal-open fixed inset-0 flex items-center justify-start bg-black bg-opacity-50"
+    on:click={closeModal}
+  >
+    <div class="modal-box w-2/3 rounded bg-white p-4 shadow-lg" on:click|stopPropagation>
+      <h3 class="text-lg font-bold">Tutors AI Explanation</h3>
+      <p class="py-4">{@html marked($modalContent)}</p>
+      <div class="flex justify-end space-x-2">
         <button on:click={() => copyText($modalContent)}><i class="fa-solid fa-copy"></i></button>
 
-      <button on:click={() => updateMessageHelpful($llmResponse.responseId, false)} aria-label="Mark as not helpful">
-        <i class="fa-solid fa-thumbs-down"></i>
-      </button>
+        <button on:click={() => updateMessageHelpful($llmResponse.responseId, false)} aria-label="Mark as not helpful">
+          <i class="fa-solid fa-thumbs-down"></i>
+        </button>
 
-      <button on:click={() => updateMessageHelpful($llmResponse.responseId, true)} aria-label="Mark as helpful">
-        <i class="fa-solid fa-thumbs-up"></i>
-      </button>
+        <button on:click={() => updateMessageHelpful($llmResponse.responseId, true)} aria-label="Mark as helpful">
+          <i class="fa-solid fa-thumbs-up"></i>
+        </button>
       </div>
     </div>
   </div>

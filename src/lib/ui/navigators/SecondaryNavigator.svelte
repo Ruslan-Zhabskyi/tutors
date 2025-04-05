@@ -13,24 +13,30 @@
   });
 </script>
 
-<div class="border-primary-100 bg-primary-50 dark:border-primary-800 z-5 mb-2 {themeClasses.firstDiv} sticky top-0 flex h-12 border-b-[1px]">
+<div
+  class="z-5 mb-2 border-primary-100 bg-primary-50 dark:border-primary-800 {themeClasses.firstDiv} sticky top-0 flex h-12 border-b-[1px]"
+>
   <Breadcrumbs {lo} {parentCourse} />
   {#if currentCourse?.value}
     <div class="flex flex-auto"></div>
     {#if currentLo?.value?.type == "lab"}
-      <div class="bg-primary-200 {themeClasses.otherDiv} bg-opacity-80 my-2 mr-2 hidden rounded-lg lg:flex">
+      <div class="bg-primary-200 {themeClasses.otherDiv} my-2 mr-2 hidden rounded-lg bg-opacity-80 lg:flex">
         <AIChatButton />
       </div>
     {/if}
     {#if currentCourse?.value?.properties.github}
-      <div class="bg-primary-200 {themeClasses.otherDiv} bg-opacity-80 my-2 mr-2 hidden rounded-lg lg:flex lg:flex-none">
+      <div
+        class="bg-primary-200 {themeClasses.otherDiv} my-2 mr-2 hidden rounded-lg bg-opacity-80 lg:flex lg:flex-none"
+      >
         <EditCoursButton />
       </div>
     {/if}
-    <div class="bg-primary-200 {themeClasses.otherDiv} bg-opacity-80 my-2 hidden rounded-lg lg:flex lg:flex-none">
+    <div class="bg-primary-200 {themeClasses.otherDiv} my-2 hidden rounded-lg bg-opacity-80 lg:flex lg:flex-none">
       <IconBar nav={currentCourse?.value?.companions} />
     </div>
-    <div class="bg-primary-200 {themeClasses.otherDiv} bg-opacity-80 my-2 mr-10 ml-2 flex hidden rounded-lg sm:flex lg:flex">
+    <div
+      class="bg-primary-200 {themeClasses.otherDiv} my-2 ml-2 mr-10 flex hidden rounded-lg bg-opacity-80 sm:flex lg:flex"
+    >
       <IconBar nav={currentCourse?.value?.wallBar} />
     </div>
   {/if}

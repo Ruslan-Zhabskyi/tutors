@@ -4,7 +4,7 @@
  */
 
 // Type exports from lo-types
-export type { 
+export type {
   Lo,
   Course,
   Topic,
@@ -35,14 +35,10 @@ export type {
 } from "./lo-types";
 
 // Utility functions from lo-types
-export { 
-  imageTypes,
-  assetTypes,
-  isCompositeLo 
-} from "./lo-types";
+export { imageTypes, assetTypes, isCompositeLo } from "./lo-types";
 
 // Supabase client and utilities
-export { 
+export {
   supabase,
   getNumOfLearningRecordsIncrements,
   getCalendarDuration,

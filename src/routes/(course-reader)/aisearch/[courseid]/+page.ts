@@ -12,5 +12,3 @@ export const load: PageLoad = async ({ params, fetch }) => {
     course: course
   };
 };
-
-  

@@ -63,7 +63,7 @@ export const FluentIconLib: IconLib = {
   thumbsUp: { type: "fluent:thumb-like-20-regular", color: "success" },
   thumbsDown: { type: "fluent:thumb-dislike-24-regular", color: "error" },
   copy: { type: "fluent:copy-add-20-regular", color: "success" },
-  
+
   courseinfo: { type: "fluent:info-28-regular", color: "bg-base-content" },
   llm: { type: "hugeicons:ai-innovation-01", color: "bg-base-content" },
   calendar: { type: "fluent:calendar-ltr-12-regular", color: "bg-base-content" },
