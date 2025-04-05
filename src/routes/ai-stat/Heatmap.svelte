@@ -322,12 +322,6 @@
           <button class="btn-outline btn" on:click={() => copyText($modalContent)}>
             <i class="fa-solid fa-copy"></i>
           </button>
-          <!-- <button 
-          class="btn btn-primary"
-          on:click={closeModal}
-        >
-          Close
-        </button> -->
         </div>
       </div>
     </div>

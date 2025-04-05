@@ -38,7 +38,7 @@
   let showEli5Button = writable(false);
   let buttonPosition = writable({ top: 0, left: 0 });
   let modalOpen = writable(false);
-  let modalContent = writable(""); // see if I can remove this
+  let modalContent = writable("");
   let llmResponse = writable<Message>({
     role: "assistant",
     userMessage: undefined,
@@ -138,7 +138,6 @@
       console.log("API Response:", llmOutput);
 
       // Save the response to the database
-
       const { data, error } = await supabase
         .from("GenAiResponses")
         .insert({

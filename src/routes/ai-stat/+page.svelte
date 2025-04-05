@@ -9,7 +9,6 @@
 
   async function fetchResponses() {
     const { data: GenAiResponses, error } = await supabase.from("GenAiResponses").select("*");
-    // .eq('helpful', true);
 
     if (error) {
       console.error("Error fetching responses:", error.message);

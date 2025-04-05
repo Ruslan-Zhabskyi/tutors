@@ -23,7 +23,6 @@
   // AI variables
   // svelte-ignore non_reactive_update
   let searchTerm: string = "";
-  // let llmOutput: string = "";
   let model_id: string = "ibm/granite-3-8b-instruct";
 
   let llmSearchResponse = writable<AISearchSummary>({
@@ -55,6 +54,7 @@
     summary: string;
     results: SearchResult[];
   }
+  
   // Google API search
   async function googleSearch(): Promise<string> {
     const apiKey = import.meta.env.VITE_Custom_Search_API_KEY;
