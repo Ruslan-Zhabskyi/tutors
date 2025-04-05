@@ -45,6 +45,8 @@ export const FluentIconLib: IconLib = {
 
   // app icons
   search: { type: "fluent:search-24-filled", color: "primary" },
+  aisearch: { type: "hugeicons:ai-network", color: "primary" },
+  aichat: { type: "eos-icons:ai-operator", color: "primary" },
   tutors: { type: "fa-solid:chalkboard-teacher", color: "bg-base-content" },
   logout: { type: "fluent:sign-out-24-filled", color: "error" },
   lightMode: { type: "fluent:paint-brush-24-filled", color: "warning" },
@@ -56,15 +58,20 @@ export const FluentIconLib: IconLib = {
   portrait: { type: "fluent:rectangle-portrait-location-target-20-regular", color: "primary" },
   circular: { type: "fluent:circle-sparkle-28-regular", color: "warning" },
   landscape: { type: "fluent:rectangle-landscape-sparkle-48-regular", color: "error" },
-
+  aiChat: { type: "mingcute:ai-line", color: "success" },
+  aiSearch: { type: "hugeicons:ai-search-02", color: "error" },
+  thumbsUp: { type: "fluent:thumb-like-20-regular", color: "success" },
+  thumbsDown: { type: "fluent:thumb-dislike-24-regular", color: "error" },
+  copy: { type: "fluent:copy-add-20-regular", color: "success" },
+  
   courseinfo: { type: "fluent:info-28-regular", color: "bg-base-content" },
-  llms: { type: "hugeicons:ai-innovation-01", color: "bg-base-content" },
+  llm: { type: "hugeicons:ai-innovation-01", color: "bg-base-content" },
   calendar: { type: "fluent:calendar-ltr-12-regular", color: "bg-base-content" },
   appSettings: { type: "fluent:settings-24-filled", color: "primary" },
   listOnline: { type: "fluent:people-list-24-filled", color: "primary" },
   edit: { type: "typcn:edit", color: "primary" },
   info: { type: "fluent:info-28-regular", color: "primary" },
-  close: { type: "fluent:add-square-32-regular", color: "primary" },
+  close: { type: "carbon:close-outline", color: "primary" },
   theme: { type: "fluent:color-fill-24-regular", color: "success" },
   codeTheme: { type: "fluent:paint-brush-sparkle-20-regular", color: "primary" },
   default: { type: "fluent:re-order-dots-vertical-24-filled", color: "error" }
