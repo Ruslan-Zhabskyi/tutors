@@ -7,6 +7,7 @@
   import { currentLo } from "$lib/runes.svelte";
   import { marked } from 'marked';
   import { writable } from "svelte/store";
+  import {supabase} from '$lib/db';
   interface Props {
     data: PageData;
   };
@@ -79,6 +80,7 @@
 
         const jsonOutput = JSON.stringify(filteredItems, null, 2);
         console.log("Search Results:", jsonOutput);  
+
         return jsonOutput;
     } catch (error) {
         console.error('Error fetching data:', error);
@@ -137,6 +139,26 @@
     let cleanedText = generatedText.split("**Output:**").pop()?.trim() || "No results found.";
     cleanedText = cleanedText.replace(/^\*\*Note:\*\*.*?\n\n/i, "").trim();
     
+            //supabase insert
+          const { data, error } = await supabase
+            .from('AISearch')
+            .insert(
+              {   searchPhrase: searchTerm,
+                  searchResult: cleanedText,
+                  llmUsed: model_id,
+                  helpful: false,
+                },
+            )
+            .select()
+
+            if (error) {
+          console.error("Error inserting data:", error.message); 
+        } else {
+          console.log("Data inserted:", data);
+        }
+
+       console.log("Data inserted:", data);
+
     const llmSearchResponseData: AISearchSummary = {
           searchId: Date.now(),
           searchDate: new Date().toISOString(),
@@ -148,6 +170,7 @@
 
       console.log("llmSearchResponse:", llmSearchResponseData);  
       llmSearchResponse.set(llmSearchResponseData);
+
   } catch (error) {
       console.error('Error:', error);
       llmSearchResponse.set({

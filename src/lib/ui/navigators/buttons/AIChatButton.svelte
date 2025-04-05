@@ -20,10 +20,6 @@
   let elemChat: HTMLElement;
 console.log("Current course:", currentLo?.value?.type);
   
-  //  $effect(() => {
-  //    console.log("Current course:", currentLo?.value?.contentMd); //leave this for the feature to work, eperiment with commenting it out
-  // });
-
   interface Message {
     role: 'user' | 'assistant' | 'system';
     userMessage?: string;
@@ -136,8 +132,6 @@ async function sendMessage(): Promise<void> {
 
     console.log(messages);
 }
-
-
 
   function handleKeyDown(event: KeyboardEvent): void {
     if (event.key === 'Enter' && !event.shiftKey) {
