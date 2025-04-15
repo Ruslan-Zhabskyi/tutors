@@ -5,7 +5,7 @@
   import { currentCourse, currentLo } from "$lib/runes.svelte";
   import { themeService } from "$lib/services/themes/services/themes.svelte";
   import AIChatButton from "./buttons/AIChatButton.svelte";
-
+//solution on lines 22-26 provided by Eamonn de Leastar
   let { lo, parentCourse = null } = $props();
   const themeClasses = $derived({
     firstDiv: themeService.currentTheme.value === "classic" ? "dark:bg-tertiary-900" : "dark:bg-primary-900",

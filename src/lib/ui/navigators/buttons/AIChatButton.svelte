@@ -14,8 +14,6 @@
   let tutorsAI: string = "/icons/tutorsAI.png";
   let topic = currentCourse?.value?.contentHtml;
   let topicDescription = currentLo?.value?.contentMd;
-  let pageContent = currentLo?.value?.los[currentLabStepIndex?.value].contentMd;
-  console.log("Updated pageContent:", pageContent);
 
   let elemChat: HTMLElement;
   console.log("Current course:", currentLo?.value?.type);
@@ -36,16 +34,8 @@
   const availableModels: string[] = ["ibm/granite-3-8b-instruct", "ibm/granite-13b-instruct-v2"];
   let selectedModel: string = availableModels[0];
 
-  let systemMessage: Message = {
-    role: "system",
-    content: `you are assisting Computer Science Higher Diploma students to understand content. \
-     At this stage student explores ${topic}. that student is currently studies: \
-     Particularly student focused on: ${topicDescription}\
-     The full text of the page student currently explores is ${pageContent}`
-  };
-
-  let messages: Message[] = [systemMessage];
-
+  let messages: Message[] = [];
+  console.log("Initial messages:", messages);
   let inputMessage: string = "";
   let isLoading: boolean = false;
   let project_id: string = "68f58c24-1633-429d-bb39-cb0947f86d02";
@@ -55,6 +45,22 @@
 
   async function sendMessage(): Promise<void> {
     if (!inputMessage.trim()) return;
+    const pageContent = currentLo?.value?.los[currentLabStepIndex?.value].contentMd;
+    console.log("Updated pageContent:", pageContent);
+  
+    const systemMessage: Message = {
+    role: "system",
+    content: `you are assisting Computer Science Higher Diploma students to understand content. \
+     At this stage student explores ${topic}. that student is currently studies: \
+     Particularly student focused on: ${topicDescription}\
+     The full text of the page student currently explores is ${pageContent}`
+  };
+
+    if (messages.length === 0) {
+      messages = [systemMessage];
+        } else {
+      messages[0] = systemMessage;
+    }
 
     const userMessage = inputMessage.trim();
     messages = [...messages, { role: "user", content: userMessage }];
