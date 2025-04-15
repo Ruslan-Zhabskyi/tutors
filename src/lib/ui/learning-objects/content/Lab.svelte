@@ -11,7 +11,7 @@
   import { supabase } from "$lib/db";
   import { currentLo, currentLabStepIndex } from "$lib/runes.svelte";
   import { marked } from "marked";
-  let pageContent = currentLo?.value?.los[currentLabStepIndex?.value].contentMd;
+
 
   interface Props {
     lab: LiveLab;
@@ -117,6 +117,7 @@
   // LLM call
   async function sendMessage(): Promise<Message> {
     const userMessage = $selectedText.trim();
+    let pageContent = currentLo?.value?.los[currentLabStepIndex?.value].contentMd;
     isLoading.set(true);
 
     try {
