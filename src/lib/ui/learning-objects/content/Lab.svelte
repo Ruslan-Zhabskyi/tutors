@@ -110,7 +110,7 @@
     modalOpen.set(false);
   }
 
-  // AI variables
+ 
   // svelte-ignore non_reactive_update
   let llmOutput: string = "";
 
@@ -133,7 +133,7 @@
       const result = await response.json();
       const llmOutput = result?.results?.[0]?.generated_text || "No results found.";
 
-      // Log the result to the console
+
       console.log("API result:", result);
       console.log("API Response:", llmOutput);
 
